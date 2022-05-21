@@ -1,6 +1,5 @@
 ---
 source: cubesql/e2e/tests/postgres.rs
-assertion_line: 285
 expression: "self.print_query_result(res, true, false).await"
 ---
 oid type: 23 (int4)
@@ -30,8 +29,8 @@ typstorage type: 25 (text)
 typnotnull type: 16 (bool)
 typbasetype type: 23 (int4)
 typtypmod type: 23 (int4)
-typndims type: 25 (text)
-typcollation type: 25 (text)
+typndims type: 23 (int4)
+typcollation type: 23 (int4)
 typdefaultbin type: 25 (text)
 typdefault type: 25 (text)
-typacl type: 25 (text)
+typacl type: 1009 (_text)
