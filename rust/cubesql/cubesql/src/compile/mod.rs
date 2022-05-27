@@ -58,7 +58,11 @@ use self::{
     parser::parse_sql_to_statement,
 };
 use crate::{
-    compile::{builder::QueryBuilder, rewrite::converter::LogicalPlanToLanguageConverter},
+    compile::{
+        builder::QueryBuilder,
+        engine::udf::{create_array_lower_udf, create_array_upper_udf},
+        rewrite::converter::LogicalPlanToLanguageConverter,
+    },
     sql::{
         database_variables::{DatabaseVariable, DatabaseVariables},
         dataframe,
@@ -2386,6 +2390,8 @@ WHERE `TABLE_SCHEMA` = '{}'",
         ctx.register_udf(create_pg_get_constraintdef_udf());
         ctx.register_udf(create_pg_truetypid_udf());
         ctx.register_udf(create_pg_truetypmod_udf());
+        ctx.register_udf(create_array_lower_udf());
+        ctx.register_udf(create_array_upper_udf());
 
         // udaf
         ctx.register_udaf(create_measure_udaf());
@@ -7100,6 +7106,78 @@ ORDER BY \"COUNT(count)\" DESC"
                     SELECT TIMESTAMP '2020-10-01 00:00:00+00:00' d
                 ) t
                 ORDER BY t.d ASC
+                "
+                .to_string(),
+                DatabaseProtocol::PostgreSQL
+            )
+            .await?
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_array_lower() -> Result<(), CubeError> {
+        insta::assert_snapshot!(
+            "array_lower_scalar",
+            execute_query(
+                "
+                SELECT
+                    array_lower(ARRAY[1,2,3,4,5]) v1,
+                    array_lower(ARRAY[5,4,3,2,1]) v2
+                "
+                .to_string(),
+                DatabaseProtocol::PostgreSQL
+            )
+            .await?
+        );
+
+        insta::assert_snapshot!(
+            "array_lower_column",
+            execute_query(
+                "
+                SELECT
+                    array_lower(t.v) q
+                FROM (
+                    SELECT ARRAY[1,2,3,4,5] as v UNION ALL
+                    SELECT ARRAY[5,4,3,2,1] as v
+                ) t
+                "
+                .to_string(),
+                DatabaseProtocol::PostgreSQL
+            )
+            .await?
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_array_upper() -> Result<(), CubeError> {
+        insta::assert_snapshot!(
+            "array_upper_scalar",
+            execute_query(
+                "
+                SELECT
+                    array_upper(ARRAY[1,2,3,4,5]) v1,
+                    array_upper(ARRAY[5,4,3,2,1]) v2
+                "
+                .to_string(),
+                DatabaseProtocol::PostgreSQL
+            )
+            .await?
+        );
+
+        insta::assert_snapshot!(
+            "array_upper_column",
+            execute_query(
+                "
+                SELECT
+                    array_upper(t.v) q
+                FROM (
+                    SELECT ARRAY[1,2,3,4,5] as v UNION ALL
+                    SELECT ARRAY[5,4,3,2,1] as v
+                ) t
                 "
                 .to_string(),
                 DatabaseProtocol::PostgreSQL
